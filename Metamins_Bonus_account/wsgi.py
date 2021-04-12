@@ -11,6 +11,8 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Metamins_Bonus_account.settings')
+os.environ.setdefault(
+    'DJANGO_SETTINGS_MODULE',
+    'Metamins_Bonus_account.settings')
 
 application = get_wsgi_application()
