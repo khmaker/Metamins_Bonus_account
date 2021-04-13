@@ -1,12 +1,12 @@
 # coding=utf-8
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import CASCADE
 from django.db.models import CharField
 from django.db.models import DateTimeField
 from django.db.models import ForeignKey
 from django.db.models import Model
 from django.db.models import PositiveIntegerField
-from django.db.models import PROTECT
 from django.db.models import TextChoices
 from phonenumber_field.modelfields import PhoneNumberField
 
@@ -151,7 +151,7 @@ class Operation(Model):
         )
     account = ForeignKey(
         Account,
-        on_delete=PROTECT,
+        on_delete=CASCADE,
         related_name='operation',
         verbose_name='Аккаунт',
         )
