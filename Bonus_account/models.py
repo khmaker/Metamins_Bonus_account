@@ -1,5 +1,4 @@
 # coding=utf-8
-from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import CharField
@@ -10,6 +9,9 @@ from django.db.models import PROTECT
 from django.db.models import TextChoices
 from django.db.models import DateTimeField
 from phonenumber_field.modelfields import PhoneNumberField
+
+from .errors import InvalidAmount
+from .errors import InsufficientFunds
 
 
 class Account(Model):
@@ -29,6 +31,7 @@ class Account(Model):
         verbose_name='Номер телефона'
     )
     card_number = CharField(
+        max_length=16,
         blank=False,
         unique=True,
         verbose_name='Номер карты',
@@ -104,13 +107,13 @@ class Operation(Model):
 
     @classmethod
     def create(
-                cls,
-                account,
-                amount,
-                transaction_type,
-                date,
-                bonus_operation_type=None
-            ):
+        cls,
+        account,
+        amount,
+        transaction_type,
+        date,
+        bonus_operation_type=None
+    ):
         if all([transaction_type == cls.TransactionType.bonus_transfer,
                 bonus_operation_type is None]):
             e = {
