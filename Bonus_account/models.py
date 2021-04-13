@@ -66,6 +66,60 @@ class Account(Model):
             )
             return account, operation
 
+    @classmethod
+    def add_bonus(
+        cls,
+        card_number,
+        amount,
+        date
+    ):
+        if amount < 0:
+            raise InvalidAmount(amount)
+        with transaction.atomic():
+            account = cls.objects.select_for_update().get(
+                card_number=card_number
+            )
+            account.balance += amount
+            account.modified = date
+            account.save(update_fields=['balance', 'modified'])
+
+            operation = Operation.create(
+                account=account,
+                amount=amount,
+                transaction_type=Operation.TransactionType.bonus_transfer,
+                date=date,
+                bonus_operation_type=Operation.BonusOperation.add_bonus
+            )
+        return account, operation
+
+    @classmethod
+    def subtract_bonus(
+        cls,
+        card_number,
+        amount,
+        date
+    ):
+        if amount < 0:
+            raise InvalidAmount(amount)
+        with transaction.atomic():
+            account = cls.objects.select_for_update().get(
+                card_number=card_number
+            )
+            if account.balance - amount < 0:
+                raise InsufficientFunds(account.balance, amount)
+            account.balance -= amount
+            account.modified = date
+            account.save(update_fields=['balance', 'modified'])
+
+            operation = Operation.create(
+                account=account,
+                amount=amount,
+                transaction_type=Operation.TransactionType.bonus_transfer,
+                date=date,
+                bonus_operation_type=Operation.BonusOperation.subtract_bonus
+            )
+        return account, operation
+
     class Meta:
         verbose_name = 'Аккаунт'
         verbose_name_plural = 'Аккаунты'
@@ -77,7 +131,7 @@ class Operation(Model):
         money_transfer = 'money transfer'
         bonus_transfer = 'bonus transfer'
 
-    class BonusOperationType(TextChoices):
+    class BonusOperation(TextChoices):
         add_bonus = 'add bonus'
         subtract_bonus = 'subtract bonus'
         keep_bonus = 'keep bonus'
@@ -89,7 +143,7 @@ class Operation(Model):
     )
     bonus_operation_type = CharField(
         max_length=50,
-        choices=BonusOperationType.choices,
+        choices=BonusOperation.choices,
         verbose_name='Операция с бонусами',
     )
     amount = PositiveIntegerField(
@@ -122,7 +176,7 @@ class Operation(Model):
             }
             raise ValidationError(e)
         if bonus_operation_type is None:
-            bonus_operation_type = cls.BonusOperationType.keep_bonus
+            bonus_operation_type = cls.BonusOperation.keep_bonus
         return cls.objects.create(
             account=account,
             amount=amount,
