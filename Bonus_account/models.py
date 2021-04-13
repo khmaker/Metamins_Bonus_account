@@ -12,7 +12,6 @@ from django.db.models import DateTimeField
 from phonenumber_field.modelfields import PhoneNumberField
 
 
-
 class Account(Model):
     first_name = CharField(
         max_length=150,
