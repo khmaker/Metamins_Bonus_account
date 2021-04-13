@@ -11,7 +11,6 @@ from django.db.models import TextChoices
 from django.db.models import DateTimeField
 from phonenumber_field.modelfields import PhoneNumberField
 
-User = get_user_model()
 
 
 class Account(Model):
@@ -58,8 +57,12 @@ class Account(Model):
                 modified=date,
             )
             operation = Operation.create(
-                account=account
+                account=account,
+                amount=0,
+                transaction_type=Operation.TransactionType.account_creation,
+                date=date
             )
+            return account, operation
 
     class Meta:
         verbose_name = 'Аккаунт'
@@ -94,20 +97,21 @@ class Operation(Model):
         Account,
         on_delete=PROTECT,
         related_name='operation',
-        verbose_name='Аккаунт')
+        verbose_name='Аккаунт',
+    )
     created = DateTimeField(
         blank=True,
     )
 
     @classmethod
     def create(
-            cls,
-            account,
-            amount,
-            transaction_type,
-            date,
-            bonus_operation_type=None
-    ):
+                cls,
+                account,
+                amount,
+                transaction_type,
+                date,
+                bonus_operation_type=None
+            ):
         if all([transaction_type == cls.TransactionType.bonus_transfer,
                 bonus_operation_type is None]):
             e = {
