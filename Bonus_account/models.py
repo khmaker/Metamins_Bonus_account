@@ -1,7 +1,9 @@
 # coding=utf-8
+from django.utils import timezone
+
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import CASCADE
+from django.db.models import SET_NULL
 from django.db.models import CharField
 from django.db.models import DateTimeField
 from django.db.models import ForeignKey
@@ -12,6 +14,11 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 from .errors import InsufficientFunds
 from .errors import InvalidAmount
+
+from .utils import card_number_generator
+
+
+CARD_NUMBER_LENGTH = 16
 
 
 class Account(Model):
@@ -31,9 +38,10 @@ class Account(Model):
         verbose_name='Номер телефона'
         )
     card_number = CharField(
-        max_length=16,
+        max_length=CARD_NUMBER_LENGTH,
         blank=False,
         unique=True,
+        editable=False,
         verbose_name='Номер карты',
         )
     balance = PositiveIntegerField(
@@ -42,14 +50,25 @@ class Account(Model):
         )
     created = DateTimeField(
         blank=True,
+        verbose_name='Дата создания',
         )
     modified = DateTimeField(
         blank=True,
+        verbose_name='Дата изменения',
         )
 
     @classmethod
-    def create(cls, first_name, last_name, phone_number, card_number, date):
+    def create(cls, first_name, last_name, phone_number):
+        card_number_exists_in_base = True
+        card_number = None
+        while card_number_exists_in_base:
+            card_number = card_number_generator(CARD_NUMBER_LENGTH)
+            accounts = cls.objects.filter(card_number=card_number)
+            operations = Operation.objects.filter(card_number=card_number)
+            card_number_exists_in_base = any((accounts.exists(),
+                                              operations.exists()))
         with transaction.atomic():
+            date = timezone.now()
             account = cls.objects.create(
                 first_name=first_name,
                 last_name=last_name,
@@ -58,24 +77,24 @@ class Account(Model):
                 created=date,
                 modified=date,
                 )
-            operation = Operation.create(
+            Operation.create(
                 account=account,
                 amount=0,
                 transaction_type=Operation.TransactionType.account_creation,
                 date=date
                 )
-            return account, operation
+            return account
 
     @classmethod
     def add_bonus(
             cls,
             card_number,
             amount,
-            date
             ):
         if amount < 0:
             raise InvalidAmount(amount)
         with transaction.atomic():
+            date = timezone.now()
             account = cls.objects.select_for_update().get(
                 card_number=card_number
                 )
@@ -90,18 +109,18 @@ class Account(Model):
                 date=date,
                 bonus_operation_type=Operation.BonusOperation.add_bonus
                 )
-        return account, operation
+        return operation
 
     @classmethod
     def subtract_bonus(
             cls,
             card_number,
             amount,
-            date
             ):
         if amount < 0:
             raise InvalidAmount(amount)
         with transaction.atomic():
+            date = timezone.now()
             account = cls.objects.select_for_update().get(
                 card_number=card_number
                 )
@@ -114,15 +133,20 @@ class Account(Model):
             operation = Operation.create(
                 account=account,
                 amount=amount,
+                card_number=card_number,
                 transaction_type=Operation.TransactionType.bonus_transfer,
                 date=date,
                 bonus_operation_type=Operation.BonusOperation.subtract_bonus
                 )
-        return account, operation
+        return operation
 
     class Meta:
         verbose_name = 'Аккаунт'
         verbose_name_plural = 'Аккаунты'
+        ordering = ('-modified', )
+
+    def __str__(self):
+        return f'{self.card_number}'
 
 
 class Operation(Model):
@@ -147,16 +171,25 @@ class Operation(Model):
         verbose_name='Операция с бонусами',
         )
     amount = PositiveIntegerField(
-        default=0
+        default=0,
+        verbose_name='Величина изменения',
         )
     account = ForeignKey(
         Account,
-        on_delete=CASCADE,
+        on_delete=SET_NULL,
+        null=True,
         related_name='operation',
         verbose_name='Аккаунт',
         )
+    card_number = CharField(
+        max_length=CARD_NUMBER_LENGTH,
+        blank=False,
+        editable=False,
+        verbose_name='Номер карты',
+        )
     created = DateTimeField(
         blank=True,
+        verbose_name='Дата создания',
         )
 
     @classmethod
@@ -165,7 +198,8 @@ class Operation(Model):
             account,
             amount,
             transaction_type,
-            date,
+            date=None,
+            card_number=None,
             bonus_operation_type=None
             ):
         if all([transaction_type == cls.TransactionType.bonus_transfer,
@@ -177,11 +211,14 @@ class Operation(Model):
             raise ValidationError(e)
         if bonus_operation_type is None:
             bonus_operation_type = cls.BonusOperation.keep_bonus
+        date = timezone.now() if date is None else date
+        number = account.card_number if card_number is None else card_number
         return cls.objects.create(
             account=account,
             amount=amount,
             transaction_type=transaction_type,
             created=date,
+            card_number=number,
             bonus_operation_type=bonus_operation_type
             )
 
