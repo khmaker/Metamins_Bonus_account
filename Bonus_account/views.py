@@ -19,7 +19,7 @@ class CreateAccountView(APIView):
         serializer.save()
         account = serializer.data
         return Response(
-            data={'account': account},
+            data=account,
             status=status.HTTP_201_CREATED)
 
 
