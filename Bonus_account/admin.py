@@ -38,6 +38,7 @@ class OperationAdmin(ModelAdmin):
         'transaction_type',
         'bonus_operation_type',
         'created',
+        'card_number',
         )
     list_filter = (
         'transaction_type',
