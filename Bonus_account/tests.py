@@ -70,4 +70,3 @@ class AccountCreateTests(APITestCase):
                 response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED
                 )
         self.assertEqual(Account.objects.count(), 0)
-
