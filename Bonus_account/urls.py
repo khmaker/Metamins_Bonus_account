@@ -11,13 +11,17 @@ v1_router = DefaultRouter()
 v1_router.register(
     'accounts',
     AccountsViewSet,
-    basename='accounts')
+    basename='accounts'
+    )
 v1_router.register(
     r'accounts/(?P<card_number>[0-9]{16})/operations',
     OperationsViewSet,
-    basename='operations')
+    basename='operations'
+    )
 
 urlpatterns = [
     path('v1/', include(v1_router.urls)),
-    path('v1/create_account', CreateAccountView.as_view()),
+    path(
+        'v1/create_account', CreateAccountView.as_view(), name='create_account'
+        ),
     ]
