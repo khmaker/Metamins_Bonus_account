@@ -7,14 +7,23 @@ from .models import Operation
 
 
 class AccountAdmin(ModelAdmin):
-    list_display = ('card_number', 'first_name', 'last_name', 'phone_number')
-    search_fields = ('card_number', 'last_name', 'phone_number')
+    list_display = (
+        'card_number',
+        'first_name',
+        'last_name',
+        'phone_number',
+        )
+    search_fields = (
+        'card_number',
+        'last_name',
+        'phone_number',
+        )
     readonly_fields = (
-            'card_number',
-            'balance',
-            'created',
-            'modified'
-            )
+        'card_number',
+        'balance',
+        'created',
+        'modified',
+        )
 
     def has_delete_permission(self, request, obj=None):
         return True
@@ -30,7 +39,11 @@ class OperationAdmin(ModelAdmin):
         'bonus_operation_type',
         'created',
         )
-    list_filter = ('transaction_type', 'bonus_operation_type', 'created')
+    list_filter = (
+        'transaction_type',
+        'bonus_operation_type',
+        'created',
+        )
 
     def has_delete_permission(self, request, obj=None):
         return False
