@@ -2,12 +2,12 @@
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
-from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from .models import Account
+from .models import Operation
 from .serializers import AccountSerializer
 from .serializers import OperationSerializer
 
@@ -41,8 +41,6 @@ class OperationsViewSet(ModelViewSet):
     http_method_names = ('get',)
 
     def get_queryset(self):
-        account = get_object_or_404(
-            Account,
+        return Operation.objects.filter(
             card_number=self.kwargs.get('card_number')
             )
-        return account.operation.all()
