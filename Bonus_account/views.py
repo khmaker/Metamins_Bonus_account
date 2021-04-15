@@ -1,4 +1,6 @@
 # coding=utf-8
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
@@ -9,10 +11,13 @@ from .models import Account
 from .serializers import AccountSerializer
 from .serializers import OperationSerializer
 
+account_response = openapi.Response('response description', AccountSerializer)
+
 
 class CreateAccountView(APIView):
     http_method_names = ('post', )
 
+    @swagger_auto_schema(responses={201: account_response})
     def post(self, request):
         serializer = AccountSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -20,14 +25,15 @@ class CreateAccountView(APIView):
         account = serializer.data
         return Response(
             data=account,
-            status=status.HTTP_201_CREATED)
+            status=status.HTTP_201_CREATED
+            )
 
 
 class AccountsViewSet(ModelViewSet):
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
     lookup_field = 'card_number'
-    http_method_names = ('get', )
+    http_method_names = ('get',)
 
 
 class OperationsViewSet(ModelViewSet):
@@ -37,5 +43,6 @@ class OperationsViewSet(ModelViewSet):
     def get_queryset(self):
         account = get_object_or_404(
             Account,
-            card_number=self.kwargs.get('card_number'))
+            card_number=self.kwargs.get('card_number')
+            )
         return account.operation.all()
