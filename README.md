@@ -30,3 +30,7 @@
 ## Documentation
 
 Документация API доступна по ссылке ```redoc/```
+
+## Comments
+
+Комментарии о ходе разработки в файле [comments.md](comments.md)
