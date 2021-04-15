@@ -19,9 +19,10 @@ class AccountSerializer(ModelSerializer):
             'first_name',
             'last_name',
             'phone_number',
-            'card_number'
+            'card_number',
+            'balance'
             )
-        read_only_fields = ('card_number',)
+        read_only_fields = ('card_number', 'balance')
         model = Account
         lookup_field = ('card_number', )
 
