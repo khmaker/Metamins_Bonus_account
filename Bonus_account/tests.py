@@ -93,10 +93,11 @@ class AccountsViewTests(APITestCase):
                 )
             cls.accounts.append(
                 {
-                    'first_name': data['first_name'],
-                    'last_name': data['last_name'],
-                    'phone_number': phone_number,
-                    'card_number': account.card_number
+                    'first_name': account.first_name,
+                    'last_name': account.last_name,
+                    'phone_number': account.phone_number,
+                    'card_number': account.card_number,
+                    'balance': account.balance
                     }
                 )
 
