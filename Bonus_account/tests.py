@@ -1,4 +1,6 @@
 # coding=utf-8
+from json import loads
+
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -70,3 +72,54 @@ class AccountCreateTests(APITestCase):
                 response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED
                 )
         self.assertEqual(Account.objects.count(), 0)
+
+
+class AccountsViewTests(APITestCase):
+    accounts = []
+
+    @classmethod
+    def setUpTestData(cls):
+        data = {
+            'first_name': 'John',
+            'last_name': 'Doe',
+            'phone_number': '9876543210'
+            }
+        for suffix in range(10):
+            phone_number = data['phone_number'] + str(suffix)
+            account = Account.create(
+                data['first_name'],
+                data['last_name'],
+                phone_number
+                )
+            cls.accounts.append(
+                {
+                    'first_name': data['first_name'],
+                    'last_name': data['last_name'],
+                    'phone_number': phone_number,
+                    'card_number': account.card_number
+                    }
+                )
+
+    def test_get_accounts_list(self):
+        """
+        Ensure we can get list of accounts
+        """
+        url = reverse('accounts-list')
+        response = self.client.get(url)
+        results = loads(response.content).get('results')
+        self.assertEqual(results, self.accounts[::-1])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Account.objects.count(), 10)
+
+    def test_get_single_account(self):
+        """
+        Ensure we can get single account
+        """
+        for account in self.accounts:
+            url = reverse('accounts-detail', kwargs={
+                'card_number': account['card_number']
+                })
+            response = self.client.get(url)
+            results = loads(response.content)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(results, account)
